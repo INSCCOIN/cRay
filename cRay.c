@@ -277,6 +277,7 @@ static void do_item(void)
         else
             render_pass((int)FW, (int)FH > 30 ? (int)FH - 30 : 200);
         snprintf(note, sizeof note, "done %dx%d", iw, ih);
+        menu_i = -1;
     } else if (menu_i == 1) {
         if (item_i == 0)
             sc.bounce = sc.bounce >= 5 ? 1 : sc.bounce + 1;
@@ -297,6 +298,7 @@ static void do_item(void)
         if (item_i == 0) {
             save_ppm();
             snprintf(note, sizeof note, "wrote %s", SAVE);
+            menu_i = -1;
         } else
             run = 0;
     }
@@ -314,21 +316,21 @@ static void draw_ui(void)
     if (menu_i < 0)
         return;
     n = nitems();
-    mx = 4 + menu_i * 64;
-    fill_rect(mx, 16, 130, 8 + n * 10, C_MENU);
+    mx = 4;
+    fill_rect(mx, 16, 168, 10 + n * 11, C_MENU);
     for (i = 0; i < n; i++) {
         item_txt(i, line, sizeof line);
-        text(mx + 4, 20 + i * 10, line, i == item_i ? C_SEL : C_TXT);
+        if (i == item_i)
+            fill_rect(mx + 1, 19 + i * 11, 166, 10, C_SEL);
+        text(mx + 4, 21 + i * 11, line, i == item_i ? C_DIM : C_TXT);
     }
 }
 
 static void frame(void)
 {
-    if (dirty) {
-        fill_rect(0, 16, (int)FW, (int)FH - 30, C_BG);
-        blit();
-        dirty = 0;
-    }
+    fill_rect(0, 16, (int)FW, (int)FH - 30, C_BG);
+    blit();
+    dirty = 0;
     draw_ui();
 }
 
@@ -377,7 +379,10 @@ int main(void)
         if (!ch)
             continue;
         if (ch == '\t') {
-            menu_i = (menu_i + 1) % NM;
+            if (menu_i < 0)
+                menu_i = 0;
+            else
+                menu_i = (menu_i + 1) % NM;
             item_i = 0;
             frame();
             continue;
