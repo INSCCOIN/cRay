@@ -11,11 +11,15 @@ double vdot(Vec a, Vec b);
 Vec vnorm(Vec a);
 Vec vref(Vec i, Vec n);
 
+enum { SHAPE_SPHERE = 0, SHAPE_BOX = 1, SHAPE_CYL = 2, SHAPE_DISK = 3, SHAPE_N };
+
 typedef struct {
     Vec c;
     double r;
     Vec col;
     double spec, refl;
+    int shape;
+    double yaw, pitch;
 } Sph;
 
 typedef struct {
@@ -25,7 +29,9 @@ typedef struct {
     int check;
 } Plane;
 
-enum { MAX_SPH = 8 };
+enum { MAX_SPH = 12 };
+
+const char *shape_name(int s);
 
 typedef struct {
     Sph sph[MAX_SPH];
