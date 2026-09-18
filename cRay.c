@@ -30,7 +30,7 @@ static uint16_t C_BG, C_TXT, C_DIM, C_HI, C_SEL, C_MENU;
 static Scene sc;
 static uint8_t img[MAXH][MAXW][3];
 static int iw, ih, dirty = 1, rendering, done_rows;
-static int menu_i = -1, item_i, run = 1;
+static int menu_i = -1, item_i, run = 1, sel;
 static char note[80] = "tab menu  enter render  q";
 
 static uint16_t rgb565(int r, int g, int b)
@@ -238,7 +238,7 @@ static int nitems(void)
     if (menu_i == 1)
         return 4;
     if (menu_i == 2)
-        return 3;
+        return 8;
     if (menu_i == 3)
         return 2;
     return 0;
@@ -259,8 +259,23 @@ static void item_txt(int i, char *o, size_t n)
         else
             snprintf(o, n, "4 threads");
     } else if (menu_i == 2) {
-        const char *s[] = {"default scene", "eye +", "eye -"};
-        snprintf(o, n, "%s", s[i]);
+        Sph *ob = &sc.sph[sel];
+        if (i == 0)
+            snprintf(o, n, "obj %d/%d", sel + 1, sc.ns);
+        else if (i == 1)
+            snprintf(o, n, "shape %s", shape_name(ob->shape));
+        else if (i == 2)
+            snprintf(o, n, "bigger  r%.2f", ob->r);
+        else if (i == 3)
+            snprintf(o, n, "smaller");
+        else if (i == 4)
+            snprintf(o, n, "yaw %.2f", ob->yaw);
+        else if (i == 5)
+            snprintf(o, n, "pitch %.2f", ob->pitch);
+        else if (i == 6)
+            snprintf(o, n, "next color");
+        else
+            snprintf(o, n, "reset scene");
     } else {
         const char *s[] = {"save PPM", "quit"};
         snprintf(o, n, "%s", s[i]);
@@ -287,13 +302,34 @@ static void do_item(void)
             sc.fov = sc.fov > 1.1 ? 0.55 : sc.fov + 0.1;
         snprintf(note, sizeof note, "qual b%d s%d", sc.bounce, sc.soft);
     } else if (menu_i == 2) {
+        static const Vec pal[] = {
+            {0.9, 0.2, 0.2}, {0.2, 0.4, 0.95}, {0.15, 0.8, 0.35},
+            {0.95, 0.85, 0.2}, {0.9, 0.9, 0.95}, {0.15, 0.15, 0.18}};
+        Sph *ob = &sc.sph[sel];
         if (item_i == 0)
-            scene_default(&sc);
+            sel = (sel + 1) % (sc.ns ? sc.ns : 1);
         else if (item_i == 1)
-            sc.eye.z -= 0.35;
-        else
-            sc.eye.z += 0.35;
-        snprintf(note, sizeof note, "scene");
+            ob->shape = (ob->shape + 1) % SHAPE_N;
+        else if (item_i == 2) {
+            ob->r *= 1.15;
+            if (ob->r > 1.8)
+                ob->r = 1.8;
+        } else if (item_i == 3) {
+            ob->r *= 0.87;
+            if (ob->r < 0.12)
+                ob->r = 0.12;
+        } else if (item_i == 4)
+            ob->yaw += 0.25;
+        else if (item_i == 5)
+            ob->pitch += 0.20;
+        else if (item_i == 6) {
+            int k = ((int)(ob->col.x * 10) + 1) % 6;
+            ob->col = pal[k];
+        } else {
+            scene_default(&sc);
+            sel = 0;
+        }
+        snprintf(note, sizeof note, "obj %d %s", sel + 1, shape_name(sc.sph[sel].shape));
     } else if (menu_i == 3) {
         if (item_i == 0) {
             save_ppm();
